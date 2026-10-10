@@ -16,6 +16,7 @@ import {
   getScenario,
   updateScenario,
   listModels,
+  deleteModel,
   saveAddress,
   getAddress,
   saveInstance,
@@ -162,5 +163,14 @@ describe('listModels', () => {
     mockedAxios.get = vi.fn().mockRejectedValue(new Error('Network error'));
     const result = await listModels();
     expect(result).toEqual([]);
+  });
+});
+
+// The backend serves DELETE /model/:name; ?name= answered 404.
+describe('deleteModel', () => {
+  it('sends the name in the path, encoded', async () => {
+    mockedAxios.delete.mockResolvedValueOnce({ status: 200, data: { success: true } });
+    expect(await deleteModel('my ship')).toBe(true);
+    expect(mockedAxios.delete).toHaveBeenCalledWith(expect.stringMatching(/\/model\/my%20ship$/));
   });
 });
