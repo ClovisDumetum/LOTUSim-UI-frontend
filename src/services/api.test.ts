@@ -16,6 +16,7 @@ import {
   getScenario,
   updateScenario,
   listModels,
+  deleteModel,
   saveAddress,
   getAddress,
   saveInstance,
@@ -55,10 +56,9 @@ describe('listScenarios', () => {
     expect(result).toEqual(['alpha', 'beta']);
   });
 
-  it('returns empty array on error', async () => {
+  it('throws on error', async () => {
     mockedAxios.get = vi.fn().mockRejectedValue(new Error('Network error'));
-    const result = await listScenarios();
-    expect(result).toEqual([]);
+    await expect(listScenarios()).rejects.toThrow('Failed to fetch scenarios');
   });
 });
 
@@ -163,4 +163,24 @@ describe('listModels', () => {
     const result = await listModels();
     expect(result).toEqual([]);
   });
+});
+
+// The backend serves DELETE /model/:name; ?name= answered 404.
+describe('deleteModel', () => {
+  it('sends the name in the path, encoded', async () => {
+    mockedAxios.delete.mockResolvedValueOnce({ status: 200, data: { success: true } });
+    expect(await deleteModel('my ship')).toBe(true);
+    expect(mockedAxios.delete).toHaveBeenCalledWith(expect.stringMatching(/\/model\/my%20ship$/));
+  });
+});
+
+it('returns false on error', async () => {
+  mockedAxios.delete = vi.fn().mockRejectedValue(new Error('Not found'));
+  expect(await deleteModel('missing')).toBe(false);
+});
+
+it('encodes slashes so the name stays a single path segment', async () => {
+  mockedAxios.delete = vi.fn().mockResolvedValue({ status: 200, data: {} });
+  await deleteModel('a/b');
+  expect(mockedAxios.delete).toHaveBeenCalledWith(expect.stringMatching(/\/model\/a%2Fb$/));
 });

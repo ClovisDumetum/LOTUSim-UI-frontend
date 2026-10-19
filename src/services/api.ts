@@ -238,9 +238,9 @@ export const createModel = async (
 
 export const deleteModel = async (name: string): Promise<boolean> => {
   try {
-    const response = await axios.delete(`http://${currentIp}:${currentPort}/model`, {
-      params: { name },
-    });
+    const response = await axios.delete(
+      `http://${currentIp}:${currentPort}/model/${encodeURIComponent(name)}`
+    );
     return response.status === 200;
   } catch (error) {
     console.error('Error deleting Model:', error);
