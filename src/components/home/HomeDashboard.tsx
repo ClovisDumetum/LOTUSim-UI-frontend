@@ -26,7 +26,7 @@
 
 import Header from '../common/Header';
 import { Map as MapComponent } from '../map/Map';
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Box } from '@mui/material';
 import SideBar from './Sidebar';
 import { listScenarios, listInstances, sendMASCommand, saveInstance } from '../../services/api';
@@ -67,8 +67,7 @@ export const HomeDashboard: React.FC = () => {
   const [instances, setInstances] = React.useState<string[]>([]);
   const [VesselPosition, setVesselPosition] = useState<Map<string, VesselPosition>>(new Map());
 
-  // TODO: remove the default lotusim instance selected
-  const [selectedInstance, setSelectedInstance] = useState<string>('lotusim');
+  const [selectedInstance, setSelectedInstance] = useState<string>('');
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const { showError } = useToast();
 
@@ -77,17 +76,16 @@ export const HomeDashboard: React.FC = () => {
    *
    * @param newData - Array of `VesselPosition` objects received.
    */
-  const updateVesselPosition = (newData: VesselPosition[]) => {
+  const updateVesselPosition = React.useCallback((newData: VesselPosition[]) => {
     setVesselPosition(new Map(newData.map((v) => [v.vesselName, v])));
-  };
+  }, []);
 
   /**
    * Fetches scenarios and instances from the backend API.
    */
   const fetchData = React.useCallback(async () => {
     try {
-      const scenarios = await listScenarios();
-      const instances = await listInstances();
+      const [scenarios, instances] = await Promise.all([listScenarios(), listInstances()]);
       setInstances(instances);
       setScenarios(scenarios);
       // Temp placeholder until instances feature is created
@@ -96,7 +94,20 @@ export const HomeDashboard: React.FC = () => {
     } catch (_err) {
       console.error('Error getting instance or scenario');
     }
-  }, [showError]);
+  }, []);
+
+  // load scenarios and instances once on mount
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  React.useEffect(() => {
+    if (instances.length === 0) {
+      if (selectedInstance) setSelectedInstance('');
+    } else if (!instances.includes(selectedInstance)) {
+      setSelectedInstance(instances[0]);
+    }
+  }, [instances, selectedInstance]);
 
   React.useEffect(() => {
     const saved = localStorage.getItem('mapCenter');
@@ -111,18 +122,16 @@ export const HomeDashboard: React.FC = () => {
   }, []);
 
   // Websocket is persistent
-  const ws_client = useRef<WebSocketClient | null>(null);
   React.useEffect(() => {
-    fetchData();
-    if (!ws_client.current) {
-      ws_client.current = new WebSocketClient(updateVesselPosition);
-      ws_client.current.connect();
-    }
+    if (!selectedInstance) return;
+    saveInstance(selectedInstance); // before connection, so client uses the right instance
+    setVesselPosition(new Map()); // clear vessel data when switching instances
+    const ws_client = new WebSocketClient(updateVesselPosition);
+    ws_client.connect();
     return () => {
-      ws_client.current?.disconnect();
-      ws_client.current = null;
+      ws_client.disconnect();
     };
-  }, [selectedInstance, fetchData]);
+  }, [selectedInstance, updateVesselPosition]);
 
   /**
    * Sends a command to spawn a new vessel on the selected instance.
@@ -135,6 +144,10 @@ export const HomeDashboard: React.FC = () => {
   const spawnVessel = async (
     agent: Agent
   ): Promise<void> => {
+    if (!selectedInstance) {
+      showError('No instance selected.');
+      return;
+    }
     const cmd: MASCmd = {
       cmdType: 0,
       sdfString: agent.generateLotusParamXML(),
@@ -162,6 +175,10 @@ export const HomeDashboard: React.FC = () => {
   };
 
   const deleteVessel = async (vessel_name: string): Promise<void> => {
+    if (!selectedInstance) {
+      showError('No instance selected.');
+      return;
+    }
     const cmd: MASCmd = {
       cmdType: 1,
       vesselName: vessel_name,
