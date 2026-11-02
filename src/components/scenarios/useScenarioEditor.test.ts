@@ -97,6 +97,24 @@ describe('useScenarioEditor — existing scenario', () => {
     expect(result.current.agents.size).toBe(1);
   });
 
+  it('rebuilds agents as Agent instances named after their map key', async () => {
+    const scenario = {
+      ...mockScenario,
+      agents: new Map([['vessel_1', makeAgent('stale_name', 'usv', 1.24, 103.72, 45)]]),
+    };
+    mockedApi.getScenario.mockResolvedValue(scenario);
+
+    const { result } = renderHook(() => useScenarioEditor('test-scenario'));
+    await act(async () => {});
+
+    const agent = result.current.agents.get('vessel_1');
+    expect(agent).toBeInstanceOf(Agent);
+    expect(agent?.name).toBe('vessel_1'); // wins over the stale name
+    expect(agent?.model).toBe('usv');
+    expect(agent?.heading).toBe(45);
+    expect(agent?.position.latitude).toBeCloseTo(1.24);
+  });
+
   it('sets error when load fails', async () => {
     mockedApi.getScenario.mockRejectedValue(new Error('Network error'));
 
@@ -113,8 +131,8 @@ describe('useScenarioEditor — existing scenario', () => {
     expect(result.current.filename).toBe('test scenario');
   });
 
-  it('keeps filename and name independent when they differ', async () => {
-    const scenario = { ...mockScenario, filename: 'demo_scenario', name: 'Demo' };
+  it('takes filename from the route and name from the loaded scenario', async () => {
+    const scenario = { ...mockScenario, name: 'Demo' };
     mockedApi.getScenario.mockResolvedValue(scenario);
     mockedApi.updateScenario.mockResolvedValue({ success: true, message: 'ok' });
 
@@ -242,8 +260,8 @@ describe('useScenarioEditor — save', () => {
       await result.current.save();
     });
 
-    const payload = (mockedApi.createScenario as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const payload = mockedApi.createScenario.mock.calls[0][0];
     expect(payload.agents).not.toBeInstanceOf(Map);
-    expect(payload.agents.v1).toBeDefined();
+    expect(payload.agents).toHaveProperty('v1');
   });
 });
