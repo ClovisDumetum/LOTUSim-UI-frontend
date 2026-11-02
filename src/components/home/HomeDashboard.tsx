@@ -88,9 +88,6 @@ export const HomeDashboard: React.FC = () => {
       const [scenarios, instances] = await Promise.all([listScenarios(), listInstances()]);
       setInstances(instances);
       setScenarios(scenarios);
-      // Temp placeholder until instances feature is created
-      setSelectedInstance('lotusim');
-      saveInstance('lotusim');
     } catch (_err) {
       console.error('Error getting instance or scenario');
     }
@@ -108,6 +105,10 @@ export const HomeDashboard: React.FC = () => {
       setSelectedInstance(instances[0]);
     }
   }, [instances, selectedInstance]);
+
+  React.useEffect(() => {
+    console.log('selectedInstance ->', selectedInstance, new Error().stack);
+  }, [selectedInstance]);
 
   React.useEffect(() => {
     const saved = localStorage.getItem('mapCenter');
