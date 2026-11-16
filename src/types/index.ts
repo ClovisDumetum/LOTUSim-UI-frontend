@@ -14,8 +14,9 @@
  * ************************************************************************************
  *
  * This module contains TypeScript interfaces and utility functions used for:
- * - Vessel and position data (`GeoPoint`, `VesselPosition`, `Pose`, etc.)
- * - Utility functions such as `radToDeg` for angle conversion.
+ * - Vessel and position data (`GeoPoint`, `VesselPosition`)
+ * - MAS command structures (`MASCmd`, `MASCmdArray`)
+ * - Pose and Quaternion is for the model editors
  *
  */
 
@@ -69,10 +70,6 @@ export interface Pose {
   orientation: Quaternion;
 }
 
-export function radToDeg(radians: number): number {
-  return radians * (180 / Math.PI);
-}
-
 /**
  * LOTUSim based ROS 2 messages
  */
@@ -107,6 +104,9 @@ export enum DomainType {
   Underwater = 'UNDERWATER',
   Aerial = 'AERIAL',
 }
+
+export const wrapLongitude = (lng: number): number => ((((lng + 180) % 360) + 360) % 360) - 180;
+export const wrapHeading = (degrees: number): number => ((degrees % 360) + 360) % 360;
 
 export interface PhysicsDomainConfig {
   domain: DomainType;
