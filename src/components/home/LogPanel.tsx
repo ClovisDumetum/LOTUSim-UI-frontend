@@ -185,16 +185,15 @@ const total = LEVELS.reduce((n, l) => n + (logs[l]?.length ?? 0), 0);
                   <Box component="span" sx={{ color: '#64748b', mr: 0.75 }}>
                     {formatStamp(log.stamp)}
                   </Box>
-                  <Box
-                    component="span"
-                    sx={{ fontWeight: 'bold', color: data.color, mr: 0.75 }}
-                  >
+                  <Box component="span" sx={{ fontWeight: 'bold', color: data.color, mr: 0.75 }}>
                     {data.label}
                   </Box>
-                  <Box component="span" sx={{ color: '#64748b', mr: 0.75 }}>
+                  <Box component="span" sx={{ color: '#64748b'}}>
                     {log.status.name}
                   </Box>
-                  <Box component="span">{log.status.message}</Box>
+                  <Box sx={{ color: '#fff', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {log.status.message}
+                  </Box>
                 </Box>
               );
             })
