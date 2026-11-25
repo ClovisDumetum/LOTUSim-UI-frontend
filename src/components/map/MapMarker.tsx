@@ -59,8 +59,9 @@ const formatCoordinate = (value?: number | null): string => {
 };
 
 const formatHeading = (value?: number | null): string => {
-  if (value == null) return 'N/A';
-  return `${value.toFixed(1)}°`;
+  if (value == null || !Number.isFinite(value)) return 'N/A';
+  const rounded = Math.round(value * 10) / 10;
+  return `${(rounded % 360).toFixed(1)}°`;
 };
 
 const formatAltitude = (value?: number | null): string => {
